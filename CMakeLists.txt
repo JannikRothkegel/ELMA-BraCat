@@ -1,4 +1,5 @@
 cmake_minimum_required (VERSION 2.8)
+project (ELMA-BraCat)
 
 # cmake .. -DLEMONADE_INCLUDE_DIR=~/LeMonADE-lib-v2.0.0/include/ -DLEMONADE_LIBRARY_DIR=~/LeMonADE-lib-v2.0.0/lib/
 
@@ -29,8 +30,8 @@ include_directories (${LEMONADE_INCLUDE_DIR})
 link_directories (${LEMONADE_LIBRARY_DIR})
 
 #define possible flags
-SET (CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O3 -msse2 -mssse3 -fexpensive-optimizations -std=c++11")
-SET (CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -O3 -msse2 -mssse3 -fexpensive-optimizations -std=c++11")
+SET (CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O3 -msse2 -mssse3 -fexpensive-optimizations -std=c++11 -Wno-narrowing")
+SET (CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -O3 -msse2 -mssse3 -fexpensive-optimizations -std=c++11 -Wno-narrowing")
 
 SET (CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -O0 -Wall -DDEBUG ")
 SET (CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -O0 -Wall -DDEBUG ")

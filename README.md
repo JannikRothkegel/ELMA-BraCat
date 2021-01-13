@@ -1,7 +1,7 @@
-# ELMA
+# ELMA-BraCat
 ELMA - Extensions of the LeMonADE library
 Repository with updates, analyzers, and projects for sharing BFM stuff related to various topics.
-
+BraCat - Branched Catalysis
 
 ## Installation
 
@@ -16,14 +16,17 @@ Repository with updates, analyzers, and projects for sharing BFM stuff related t
     cmake -DLEMONADE_INCLUDE_DIR=/path/to/LeMonADE-library/include/ -DLEMONADE_LIBRARY_DIR=/path/to/LeMonADE-library/lib/ ..
     make
 ````
+or
 
-## Test WL-OpenMP
 ````sh
-export OMP_NUM_THREADS=<number of threads to use>
-./WangLandauSimulatorNextNeighborOpenMP -i LinearChain_N32_PerXYZ128_NNS_E-0.4.bfm --min -10000.2 --max 0.6 --bins 25002 -m 100000000000 -r 10 -b 10000 -f 1.1 --min-win -95.0 --max-win 0.4 --HGLnDOS LinearChain_N32_PerXYZ128_NNS_E-0.4_HGLnDOS_shifted_01.dat --dump 0 --overlap 0.5 --length-increase 0.125 --read-in-BFM 0 --flatness 0.2 > /dev/null 2>&1
-./WangLandauSimulatorExtendedShellInteractionOpenMP -i LinearChain_N32_PerXYZ128_ES_rC2.451_E-0.4.bfm --min -10000.2 --max 0.6 --bins 25002 -m 100000000000 -r 10 -b 1000 -f 1.001 --min-win -32.0 --max-win 0.4 --HGLnDOS guess.dat --dump 0 --overlap 0.5 --length-increase 0.025 --read-in-BFM 0 --flatness 0.85 > /dev/null 2>&1
+    cmake -S. -Bbuild -DCMAKE_BUILD_TYPE=Release -DLEMONADE_INCLUDE_DIR=/path/to/LeMonADE-library/include/ -DLEMONADE_LIBRARY_DIR=/path/to/LeMonADE-library/lib/
+    cmake --build build/
 ````
 
+## Environment
+* tested with g++ version GNU 10.2.1
+* [LeMonADE library](https://github.com/LeMonADE-project/LeMonADE/commit/0cd5499379a6abeab2f9e1c5f67b10edd288481b) version 2.2.1
+* cmake version 3.18.4
 
 
 ## License
