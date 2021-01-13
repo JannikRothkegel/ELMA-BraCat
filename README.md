@@ -1,7 +1,6 @@
 # ELMA-BraCat
 ELMA - Extensions of the LeMonADE library
-Repository with updates, analyzers, and projects for sharing BFM stuff related to various topics.
-BraCat - Branched Catalysis
+BraCat - Branched Catalysis related to the [paper](https://pubs.acs.org/doi/abs/10.1021/jacs.9b06785)
 
 ## Installation
 
@@ -28,7 +27,23 @@ or
 * [LeMonADE library](https://github.com/LeMonADE-project/LeMonADE/commit/0cd5499379a6abeab2f9e1c5f67b10edd288481b) version 2.2.1
 * cmake version 3.18.4
 
+## Run  
+
+### Create branched structures
+
+````sh
+    ./CreatorChainWalkingTertiaryBondWalking -f filename.bfm -n 500 -p 0.5 -t 1.0 -b 256
+````
 
 ## License
 
 See the LICENSE in the root directory.
+
+## How to cite
+
+The development of the code is mainly funded by academic research grants. 
+If you find the source code useful please cite the related paper:
+
+[1] R. Dockhorn, L. Plüschke, M. Geisler, J. Zessin, P. Lindner, R. Mundil, J. Merna, J.-U. Sommer, A. Lederer,
+    "Polyolefins Formed by Chain Walking Catalysis—A Matter of Branching Density Only?", [J. Am. Chem. Soc. 2019, 141 (31), 15586-15596](https://pubs.acs.org/doi/10.1021/jacs.9b06785)
+
