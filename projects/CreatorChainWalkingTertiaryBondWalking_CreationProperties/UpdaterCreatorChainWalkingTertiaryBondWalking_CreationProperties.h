@@ -49,6 +49,11 @@ along with LeMonADE.  If not, see <http://www.gnu.org/licenses/>.
 
 #include <map>
 #include <vector>
+#include <iostream>
+#include <string>
+#include <utility>
+#include <functional>
+#include <queue>
 
 #include "StatisticMoment.h"
 #include "Histogram1D.h"
@@ -67,6 +72,16 @@ public:
 
 	bool addMonomerToParentWithProbability(uint32_t parent_id, int32_t type);
 
+        typedef uint32_t NodeIdx;
+        typedef std::map<NodeIdx, int> Nodelist;
+        typedef std::map<NodeIdx, Nodelist> Graph;
+        //typedef std::pair<NodeIdx, Nodelist> Node;
+        typedef std::pair<int, NodeIdx> Edge; //! (tentative distance, idxNode)
+        typedef std::vector<NodeIdx> NodeVector;
+
+        void dijkstra(Graph &graph, NodeIdx source, Nodelist &distance);
+        int calculateTopologicalDistance(NodeIdx, NodeIdx);
+        
 private:
 	using BaseClass::ingredients;
 
@@ -108,6 +123,15 @@ private:
         
         Histogram1D* HG_WalksBetweenAttemptedInsertion;
         Histogram1D* HG_WalksBetweenPerformedInsertion;
+        
+        StatisticMoment TopologicalDistanceBetweenAttemptedInsertion;
+        StatisticMoment TopologicalDistanceBetweenPerformedInsertion;
+        //! idxWalker = position of monomer as index
+	uint32_t idxWalkerBeforePerformedInsertion;
+        uint32_t idxWalkerBeforeAttemptedInsertion;
+        
+        Histogram1D* HG_TopologicalDistanceBetweenAttemptedInsertion;
+        Histogram1D* HG_TopologicalDistanceBetweenPerformedInsertion;
 };
 
 /** 
@@ -128,6 +152,12 @@ BaseClass(ingredients_), number_of_monomers(_number_of_monomers), probabilityFor
   HG_WalksBetweenPerformedInsertion = new Histogram1D(0 - 0.5, 20000 - 0.5, 20000);
   
   nrOfSamples = 0;
+  
+  TopologicalDistanceBetweenPerformedInsertion.clear();
+  TopologicalDistanceBetweenAttemptedInsertion.clear();
+  
+  HG_TopologicalDistanceBetweenAttemptedInsertion = new Histogram1D(0 - 0.5, 20000 - 0.5, 20000);
+  HG_TopologicalDistanceBetweenPerformedInsertion = new Histogram1D(0 - 0.5, 20000 - 0.5, 20000);
 }
 
 /**
@@ -166,6 +196,8 @@ void UpdaterCreatorChainWalkingTertiaryBondWalking_CreationProperties<Ingredient
 	ingredients.modifyMolecules().addMonomer(boxX/2+2, boxY/2, boxZ/2);
 	ingredients.modifyMolecules()[1].setAttributeTag(2);
 	idxWalker = ingredients.getMolecules().size()-1;
+        idxWalkerBeforePerformedInsertion = ingredients.getMolecules().size()-1;
+        idxWalkerBeforeAttemptedInsertion = ingredients.getMolecules().size()-1;
 
 	ingredients.modifyMolecules().connect( 0, 1);
 
@@ -294,9 +326,16 @@ bool UpdaterCreatorChainWalkingTertiaryBondWalking_CreationProperties<Ingredient
                   
                   // add value to the histogram
                   HG_WalksBetweenAttemptedInsertion->AddValue(WalksBetweenAttemptedInsertion_counter);
-
                   
                   WalksBetweenAttemptedInsertion_counter = 0;
+                  
+                  // +1 as virtually treated to be attached at new position
+                  int td = calculateTopologicalDistance(idxWalkerBeforeAttemptedInsertion, idxWalker)+1;
+                  TopologicalDistanceBetweenAttemptedInsertion.AddValue(td);
+                  
+                  HG_TopologicalDistanceBetweenAttemptedInsertion->AddValue(td);
+                  
+                  idxWalkerBeforeAttemptedInsertion=idxWalker;
                                 
 
 		// try to connect to new structure if functionality is smaller than 3
@@ -323,7 +362,16 @@ bool UpdaterCreatorChainWalkingTertiaryBondWalking_CreationProperties<Ingredient
 				// move Walker to new monomer
 				idxWalker = ingredients.getMolecules().size()-1;
 				// std::cout << " to monomer: " << (ingredients.getMolecules().size()-1) << " with tag " << (ingredients.getMolecules()[(ingredients.getMolecules().size()-1)].getAttributeTag()) << std::endl;
-			}
+			        //std::cout << "Calc Perf" << idxWalkerBeforePerformedInsertion << " to " <<idxWalker  << std::endl; 
+                                //std::cout << "Calc Perf" << calculateTopologicalDistance(idxWalkerBeforePerformedInsertion, idxWalker) << std::endl;
+                                int td = calculateTopologicalDistance(idxWalkerBeforePerformedInsertion, idxWalker);
+                                TopologicalDistanceBetweenPerformedInsertion.AddValue(td);
+                                HG_TopologicalDistanceBetweenPerformedInsertion->AddValue(td);
+                                idxWalkerBeforePerformedInsertion=idxWalker;
+                                
+                                // correct the position in case the attachment was successful
+                                idxWalkerBeforeAttemptedInsertion=idxWalker;
+                        }
 
 		}
 
@@ -398,6 +446,96 @@ bool UpdaterCreatorChainWalkingTertiaryBondWalking_CreationProperties<Ingredient
         return true;
 }
 
+template<class IngredientsType>
+int UpdaterCreatorChainWalkingTertiaryBondWalking_CreationProperties<IngredientsType>::calculateTopologicalDistance(NodeIdx StartNode, NodeIdx EndNode)
+{
+  Graph treeGraph;
+
+  Nodelist degreeNode; // Degree of node
+
+    for (int k = 0; k < ingredients.getMolecules().size(); k++) {
+        for (int l = 0; l < ingredients.getMolecules().getNumLinks(k); l++) {
+            // connect from idxAA to idxBB with value ZZ
+            // all (symmetric) connections
+            treeGraph[k][ingredients.getMolecules().getNeighborIdx(k, l)] = 1;
+
+        }
+        // fill with degree of nodes
+        degreeNode[k] = ingredients.getMolecules().getNumLinks(k);
+    }
+    
+    Nodelist topo_distance;
+    dijkstra(treeGraph, StartNode, topo_distance);
+    
+    std::cout << "startNode -> node => distance" << std::endl;
+    
+    Nodelist::iterator it;
+    for (it = topo_distance.begin(); it != topo_distance.end(); ++it) {
+      std::cout << StartNode << " -> " << it->first << "  => " << it->second << std::endl;
+    }
+    
+    int distance = 0;
+    Nodelist::iterator itEN = topo_distance.find(EndNode);
+    if (itEN != topo_distance.end())
+      distance = itEN->second;
+    else
+      {
+        std::stringstream errormessage;
+        errormessage << "UpdaterCreatorChainWalkingTertiaryBondWalking_CreationProperties::execute()...Topological distance is undefined\n"
+                << "This should NEVER happen as we have only a single tree\n";
+
+        throw std::runtime_error(errormessage.str());
+      }
+    
+    return distance;
+}
+
+
+template<class IngredientsType>
+void UpdaterCreatorChainWalkingTertiaryBondWalking_CreationProperties<IngredientsType>::dijkstra(Graph &graph, NodeIdx source, Nodelist &distance) {
+
+    distance.clear(); //! clear all tentative distance information
+
+    //! list of all nodes to be visit and addressed already with least distance on top
+    std::priority_queue<Edge, std::vector<Edge>, std::greater<Edge> > queueNode;
+
+    // starting node with tentative distance=0, starting node = source
+    queueNode.push(Edge(0, source));
+
+    while (!queueNode.empty()) {
+
+        //get the element with least tentative distance
+        Edge tmped = queueNode.top();
+
+        // access the node index
+        NodeIdx tmpnl = tmped.second;
+
+        // removes the top element
+        queueNode.pop();
+
+        // if the node never visited before
+        if (distance.count(tmpnl) == 0) {
+
+            // tentative distance to the recent node
+            int dist = tmped.first;
+
+            // set the tentative distance to the node
+            distance[tmpnl] = dist;
+
+            // new subgraph of all neighbors
+            Nodelist tempgraph = graph[tmpnl];
+
+            Nodelist::iterator it;
+            for (it = tempgraph.begin(); it != tempgraph.end(); ++it) {
+                int distint = it->second;
+                NodeIdx distlabel = it->first;
+                queueNode.push(Edge(dist + distint, distlabel));
+            }
+
+        }
+    }
+
+}
 
 template<class IngredientsType>
 bool UpdaterCreatorChainWalkingTertiaryBondWalking_CreationProperties<IngredientsType>::addMonomerToParentWithProbability(uint32_t parent_id, int32_t type){
@@ -531,6 +669,7 @@ void UpdaterCreatorChainWalkingTertiaryBondWalking_CreationProperties<Ingredient
 
     ResultFormattingTools::writeResultFile(filenameWalking, this->ingredients, tmpResultsWalking, comment.str());
 
+    /*******************/
     
     // construct a list
     std::vector < std::vector<double> > tmpResultsHG_WalkingAttempted;
@@ -576,7 +715,7 @@ void UpdaterCreatorChainWalkingTertiaryBondWalking_CreationProperties<Ingredient
             << " <c(d)> ... total counts at walk length (ensemble average)" << std::endl
             << " <cnorm(d)> ... average normalized counts by all counts at walk length (ensemble sum)" << std::endl
             << " <snorm(d)> ... cumulative average normalized counts by all counts at walk length d = sum_d <cnorm(d)> " << std::endl
-            << "d <c(d)> <cnorm(d)> <s(d)> <snorm(d)> samples(d)";
+            << "d <c(d)> <cnorm(d)> <snorm(d)>";
 
     //new filename
     std::string filenameHG_WalkingAttempted = filenameGeneral + "_CreationPropertyWalksHGWalkingAttempted.dat";
@@ -633,12 +772,167 @@ void UpdaterCreatorChainWalkingTertiaryBondWalking_CreationProperties<Ingredient
             << " <c(d)> ... total counts at walk length (ensemble average)" << std::endl
             << " <cnorm(d)> ... average normalized counts by all counts at walk length (ensemble sum)" << std::endl
             << " <snorm(d)> ... cumulative average normalized counts by all counts at walk length d = sum_d <cnorm(d)> " << std::endl
-            << "d <c(d)> <cnorm(d)> <s(d)> <snorm(d)> samples(d)";
+            << "d <c(d)> <cnorm(d)> <snorm(d)>";
 
     //new filename
     std::string filenameHG_WalkingPerformed = filenameGeneral + "_CreationPropertyWalksHGWalkingPerformed.dat";
 
     ResultFormattingTools::writeResultFile(filenameHG_WalkingPerformed, this->ingredients, tmpResultsHG_WalkingPerformed, commentHG_WalkingPerformed.str());
+    
+    
+    
+    /****************************/
+     // construct a list
+    std::vector < std::vector<double> > tmpResultsTopologicalDistance;
+
+    // we have 3 columns and row
+    columns = 5;
+    rows = 1;
+
+    // we have columns
+    tmpResultsTopologicalDistance.resize(columns);
+
+    // we have rows
+    for (int i = 0; i < columns; i++)
+        tmpResultsTopologicalDistance[i].resize(0);
+
+    tmpResultsTopologicalDistance[0].push_back(probabilityForInsertion);
+    tmpResultsTopologicalDistance[1].push_back(TopologicalDistanceBetweenAttemptedInsertion.ReturnM1());
+    tmpResultsTopologicalDistance[2].push_back(TopologicalDistanceBetweenPerformedInsertion.ReturnM1());
+    tmpResultsTopologicalDistance[3].push_back(TopologicalDistanceBetweenAttemptedInsertion.ReturnN());
+    tmpResultsTopologicalDistance[4].push_back(TopologicalDistanceBetweenPerformedInsertion.ReturnN());
+    
+    std::stringstream commentTopologicalDistance;
+    commentTopologicalDistance << " File produced by analyzer UpdaterCreatorChainWalkingTertiaryBondWalking_CreationProperties" << std::endl
+            << " Statistics of creation process involving the average Topological distance d along the structure" << std::endl
+            << " between an attempted (and maybe successful) adding of monomer Dattempted" << std::endl
+            << " between an performed adding of monomer Dperformed" << std::endl
+            << " with " << ingredients.getMolecules().size() << " monomers" << std::endl
+            << " Total number of samples: " << nrOfSamples << std::endl
+            << std::endl
+            << " p          ... attachment probability" << std::endl
+            << " Dattempted ... average topological distance along the structure between attempted attachment" << std::endl
+            << " Dperformed ... average topological distance along the structure between performed attachment" << std::endl
+            << " SamplesDat ... total number of samples for Dattempted" << std::endl
+            << " SamplesDpe ... total number of samples for Dperformed" << std::endl
+            << "p Dattempted Dperformed samplesDat samplesDpe";
+
+    //new filename
+    std::string filenameTopologicalDistance = filenameGeneral + "_CreationPropertyTopologicalDistance.dat";
+
+    ResultFormattingTools::writeResultFile(filenameTopologicalDistance, this->ingredients, tmpResultsTopologicalDistance, commentTopologicalDistance.str());
+
+    /*******************/
+    
+    // construct a list
+    std::vector < std::vector<double> > tmpResultsHG_TopologicalDistanceBetweenAttemptedInsertion;
+
+    // we have 6 columns and row
+    columns = 4;
+    rows = 1;
+
+    // we have columns
+    tmpResultsHG_TopologicalDistanceBetweenAttemptedInsertion.resize(columns);
+
+    // we have rows
+    for (int i = 0; i < columns; i++)
+        tmpResultsHG_TopologicalDistanceBetweenAttemptedInsertion[i].resize(0);
+
+    // fill the histogram
+    for (int bin = 0; bin < HG_TopologicalDistanceBetweenAttemptedInsertion->GetNrBins(); bin++) {
+        if (HG_TopologicalDistanceBetweenAttemptedInsertion->GetNrInBin(bin) != 0) {
+            tmpResultsHG_TopologicalDistanceBetweenAttemptedInsertion[0].push_back(HG_TopologicalDistanceBetweenAttemptedInsertion->GetRangeInBin(bin));
+            tmpResultsHG_TopologicalDistanceBetweenAttemptedInsertion[1].push_back(HG_TopologicalDistanceBetweenAttemptedInsertion->GetNrInBin(bin));
+            tmpResultsHG_TopologicalDistanceBetweenAttemptedInsertion[2].push_back(HG_TopologicalDistanceBetweenAttemptedInsertion->GetNrInBinNormiert(bin) / HG_TopologicalDistanceBetweenAttemptedInsertion->GetIntervallThickness());
+            tmpResultsHG_TopologicalDistanceBetweenAttemptedInsertion[3].push_back(HG_TopologicalDistanceBetweenAttemptedInsertion->GetCumulativeNrInBinNormiert(bin) / HG_TopologicalDistanceBetweenAttemptedInsertion->GetIntervallThickness());
+            
+        }
+    }
+    
+    std::stringstream commentHG_TopologicalDistanceBetweenAttemptedInsertion;
+    commentHG_TopologicalDistanceBetweenAttemptedInsertion << " File produced by analyzer UpdaterCreatorChainWalkingTertiaryBondWalking_CreationProperties" << std::endl
+            << " Statistics of creation process involving the average topological distance d along the structure" << std::endl
+            << " between an attempted (and maybe successful) adding of monomer Dattempted" << std::endl
+            << " between an performed adding of monomer Dperformed" << std::endl
+            << " with " << ingredients.getMolecules().size() << " monomers" << std::endl
+            << std::endl
+            << " Total counts in all bins: " << HG_TopologicalDistanceBetweenAttemptedInsertion->GetNrCounts() << std::endl
+            << " Total number of samples: " << nrOfSamples << std::endl
+            << " Total number of bins " << HG_TopologicalDistanceBetweenAttemptedInsertion->GetNrBins() << std::endl
+            << " Interval [" << HG_TopologicalDistanceBetweenAttemptedInsertion->GetRangeInBin(0) << " ; " << HG_TopologicalDistanceBetweenAttemptedInsertion->GetRangeInBin(HG_TopologicalDistanceBetweenAttemptedInsertion->GetNrBins()) << "]" << std::endl
+            << " Interval thickness dI = " << HG_TopologicalDistanceBetweenAttemptedInsertion->GetIntervallThickness() << std::endl
+            << " Attachment probability p: " << probabilityForInsertion << std::endl
+            << " Average topological distance between attempted attachment Dattempted: " << TopologicalDistanceBetweenAttemptedInsertion.ReturnM1() << std::endl
+            << " Average topological distance between successful attachment Dperformed: " << TopologicalDistanceBetweenPerformedInsertion.ReturnM1()  << std::endl
+            << std::endl
+            << " d ... topological distance between performed attachment" << std::endl
+            << " <c(d)> ... total counts at topological distance (ensemble average)" << std::endl
+            << " <cnorm(d)> ... average normalized counts by all counts at topological distance (ensemble sum)" << std::endl
+            << " <snorm(d)> ... cumulative average normalized counts by all counts at topological distance d = sum_d <cnorm(d)> " << std::endl
+            << "d <c(d)> <cnorm(d)> <snorm(d)>";
+
+    //new filename
+    std::string filenameHG_TopologicalDistanceBetweenAttemptedInsertion = filenameGeneral + "_CreationPropertyTopologicalDistanceHGAttempted.dat";
+
+    ResultFormattingTools::writeResultFile(filenameHG_TopologicalDistanceBetweenAttemptedInsertion, this->ingredients, tmpResultsHG_TopologicalDistanceBetweenAttemptedInsertion, commentHG_TopologicalDistanceBetweenAttemptedInsertion.str());
+    
+    
+    /********************************/
+    
+    // construct a list
+    std::vector < std::vector<double> > tmpResultsHG_TopologicalDistanceBetweenPerformedInsertion;
+
+    // we have 6 columns and row
+    columns = 4;
+    rows = 1;
+
+    // we have columns
+    tmpResultsHG_TopologicalDistanceBetweenPerformedInsertion.resize(columns);
+
+    // we have rows
+    for (int i = 0; i < columns; i++)
+        tmpResultsHG_TopologicalDistanceBetweenPerformedInsertion[i].resize(0);
+
+    // fill the histogram
+    for (int bin = 0; bin < HG_TopologicalDistanceBetweenPerformedInsertion->GetNrBins(); bin++) {
+        if (HG_TopologicalDistanceBetweenPerformedInsertion->GetNrInBin(bin) != 0) {
+            tmpResultsHG_TopologicalDistanceBetweenPerformedInsertion[0].push_back(HG_TopologicalDistanceBetweenPerformedInsertion->GetRangeInBin(bin));
+            tmpResultsHG_TopologicalDistanceBetweenPerformedInsertion[1].push_back(HG_TopologicalDistanceBetweenPerformedInsertion->GetNrInBin(bin));
+            tmpResultsHG_TopologicalDistanceBetweenPerformedInsertion[2].push_back(HG_TopologicalDistanceBetweenPerformedInsertion->GetNrInBinNormiert(bin) / HG_TopologicalDistanceBetweenPerformedInsertion->GetIntervallThickness());
+            tmpResultsHG_TopologicalDistanceBetweenPerformedInsertion[3].push_back(HG_TopologicalDistanceBetweenPerformedInsertion->GetCumulativeNrInBinNormiert(bin) / HG_TopologicalDistanceBetweenPerformedInsertion->GetIntervallThickness());
+            
+        }
+    }
+    
+    std::stringstream commentHG_TopologicalDistanceBetweenPerformedInsertion;
+    commentHG_TopologicalDistanceBetweenPerformedInsertion << " File produced by analyzer UpdaterCreatorChainWalkingTertiaryBondWalking_CreationProperties" << std::endl
+            << " Statistics of creation process involving the average topological distance d along the structure" << std::endl
+            << " between an attempted (and maybe successful) adding of monomer Dattempted" << std::endl
+            << " between an performed adding of monomer Dperformed" << std::endl
+            << " with " << ingredients.getMolecules().size() << " monomers" << std::endl
+            << std::endl
+            << " Total counts in all bins: " << HG_TopologicalDistanceBetweenPerformedInsertion->GetNrCounts() << std::endl
+            << " Total number of samples: " << nrOfSamples << std::endl
+            << " Total number of bins " << HG_TopologicalDistanceBetweenPerformedInsertion->GetNrBins() << std::endl
+            << " Interval [" << HG_TopologicalDistanceBetweenPerformedInsertion->GetRangeInBin(0) << " ; " << HG_TopologicalDistanceBetweenPerformedInsertion->GetRangeInBin(HG_TopologicalDistanceBetweenPerformedInsertion->GetNrBins()) << "]" << std::endl
+            << " Interval thickness dI = " << HG_TopologicalDistanceBetweenPerformedInsertion->GetIntervallThickness() << std::endl
+            << " Attachment probability p: " << probabilityForInsertion << std::endl
+            << " Average topological distance between attempted attachment Dattempted: " << TopologicalDistanceBetweenAttemptedInsertion.ReturnM1() << std::endl
+            << " Average topological distance between successful attachment Dperformed: " << TopologicalDistanceBetweenPerformedInsertion.ReturnM1()  << std::endl
+            << std::endl
+            << " d ... topological distance between performed attachment" << std::endl
+            << " <c(d)> ... total counts at topological distance (ensemble average)" << std::endl
+            << " <cnorm(d)> ... average normalized counts by all counts at topological distance (ensemble sum)" << std::endl
+            << " <snorm(d)> ... cumulative average normalized counts by all counts at topological distance d = sum_d <cnorm(d)> " << std::endl
+            << "d <c(d)> <cnorm(d)> <snorm(d)>";
+
+    //new filename
+    std::string filenameHG_TopologicalDistanceBetweenPerformedInsertion = filenameGeneral + "_CreationPropertyTopologicalDistanceHGPerformed.dat";
+
+    ResultFormattingTools::writeResultFile(filenameHG_TopologicalDistanceBetweenPerformedInsertion, this->ingredients, tmpResultsHG_TopologicalDistanceBetweenPerformedInsertion, commentHG_TopologicalDistanceBetweenPerformedInsertion.str());
+    
+    
+    /********************************/
 }
 
 
