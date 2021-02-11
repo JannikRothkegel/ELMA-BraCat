@@ -14,3 +14,6 @@ add_subdirectory(CreatorChainWalkingTertiaryBondWalking_TopologicalProperties)
 
 # Creational properties of BraCat structures
 add_subdirectory(CreatorChainWalkingTertiaryBondWalking_CreationProperties)
+
+# BGRW_CreationProperties
+add_subdirectory(BGRW_CreationProperties)
