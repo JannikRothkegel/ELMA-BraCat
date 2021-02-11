@@ -17,3 +17,6 @@ add_subdirectory(CreatorChainWalkingTertiaryBondWalking_CreationProperties)
 
 # BGRW_CreationProperties
 add_subdirectory(BGRW_CreationProperties)
+
+# Rouse Matrix evaluation of BGRW
+add_subdirectory(BGRW_RouseMatrix)
