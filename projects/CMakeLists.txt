@@ -23,3 +23,7 @@ add_subdirectory(BGRW_RouseMatrix)
 
 # Rouse Matrix evaluation of Hyperstar
 add_subdirectory(Hyperstar_RouseMatrix)
+
+# Rouse Matrix evaluation of Hyperdendrimer
+add_subdirectory(Hyperdendrimer_RouseMatrix)
+
