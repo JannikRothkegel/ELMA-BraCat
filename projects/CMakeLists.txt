@@ -20,3 +20,6 @@ add_subdirectory(BGRW_CreationProperties)
 
 # Rouse Matrix evaluation of BGRW
 add_subdirectory(BGRW_RouseMatrix)
+
+# Rouse Matrix evaluation of Hyperstar
+add_subdirectory(Hyperstar_RouseMatrix)
