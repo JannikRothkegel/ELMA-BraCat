@@ -27,3 +27,5 @@ add_subdirectory(Hyperstar_RouseMatrix)
 # Rouse Matrix evaluation of Hyperdendrimer
 add_subdirectory(Hyperdendrimer_RouseMatrix)
 
+# Rouse Matrix evaluation of BarabasiAlbert for m=1 and initial m0=2
+add_subdirectory(BarabasiAlbert_RouseMatrix)
