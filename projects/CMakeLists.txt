@@ -29,3 +29,6 @@ add_subdirectory(Hyperdendrimer_RouseMatrix)
 
 # Rouse Matrix evaluation of BarabasiAlbert for m=1 and initial m0=2
 add_subdirectory(BarabasiAlbert_RouseMatrix)
+
+# Radius of gyration analyzer for single tree-like structure
+add_subdirectory(ChainWalking_Analyzer_RG2)
