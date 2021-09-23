@@ -10,11 +10,11 @@
 
 #include <iostream>
 #include <string>
-
+//#include <vector>
 #include <LeMonADE/utility/Vector3D.h>
 #include <LeMonADE/analyzer/AbstractAnalyzer.h>
 #include <LeMonADE/utility/ResultFormattingTools.h>
-
+#include <fstream>
 
 
 /*****************************************************************************
@@ -52,6 +52,8 @@ private:
  double sumRg2_y;
  double sumRg2_z;
  
+ std::vector < std::vector<double> > Rg_2_all; 
+
  uint32_t nValues;
  
  double sumBondLength2;
@@ -139,6 +141,8 @@ bool Analyzer_ChainWalking_RG2<IngredientsType>::execute()
 		double Rg2_y = 0.0;
 		double Rg2_z = 0.0;
 
+        std::vector<double> Rg_2_state;
+
 		for (int k= 0; k < ingredients.getMolecules().size(); k++)
 		{
 			for (int l= k; l < ingredients.getMolecules().size(); l++)
@@ -161,6 +165,11 @@ bool Analyzer_ChainWalking_RG2<IngredientsType>::execute()
 		Rg2_z /= 1.0*(ingredients.getMolecules().size()*ingredients.getMolecules().size());
 
 		Rg2 = Rg2_x+Rg2_y+Rg2_z;
+
+        
+        Rg_2_state.push_back(Rg2);
+
+        Rg_2_all.push_back(Rg_2_state);
 
 
 		// add value to the average
@@ -260,11 +269,17 @@ void Analyzer_ChainWalking_RG2<IngredientsType>::cleanup()
 
 
 
+
+    
 	//new filename
 	std::string filenameRg2 = filenameGeneral + "_Rg2.dat";
+    std::string filenameRg2_all = filenameGeneral + "_Rg2_all.dat";
+
+    
+    
 
 	ResultFormattingTools::writeResultFile(filenameRg2, this->ingredients, tmpResultsRg2, comment.str());
-
+    ResultFormattingTools::writeResultFile(filenameRg2_all, this->ingredients, Rg_2_all, comment.str());
 }
 
 

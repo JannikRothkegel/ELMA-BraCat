@@ -1,50 +1,50 @@
 cmake_minimum_required (VERSION 2.8)
 
 # Standard LeMonADE
-add_subdirectory(SimpleSimulatorStandard)
+#add_subdirectory(SimpleSimulatorStandard)
 
 # Branched Catalysis
-add_subdirectory(CreatorChainWalkingTertiaryBondWalking)
+#add_subdirectory(CreatorChainWalkingTertiaryBondWalking)
 
 # Rouse Matrix evaluation of BraCat structures
-add_subdirectory(CreatorChainWalkingTertiaryBondWalking_RouseMatrix)
+#add_subdirectory(CreatorChainWalkingTertiaryBondWalking_RouseMatrix)
 
 # Topological properties of BraCat structures
-add_subdirectory(CreatorChainWalkingTertiaryBondWalking_TopologicalProperties)
+#add_subdirectory(CreatorChainWalkingTertiaryBondWalking_TopologicalProperties)
 
 # Creational properties of BraCat structures
-add_subdirectory(CreatorChainWalkingTertiaryBondWalking_CreationProperties)
+#add_subdirectory(CreatorChainWalkingTertiaryBondWalking_CreationProperties)
 
 # BGRW_CreationProperties
-add_subdirectory(BGRW_CreationProperties)
+#add_subdirectory(BGRW_CreationProperties)
 
 # Rouse Matrix evaluation of BGRW
-add_subdirectory(BGRW_RouseMatrix)
+#add_subdirectory(BGRW_RouseMatrix)
 
 # Rouse Matrix evaluation of Hyperstar
-add_subdirectory(Hyperstar_RouseMatrix)
+#add_subdirectory(Hyperstar_RouseMatrix)
 
 # Rouse Matrix evaluation of Hyperdendrimer
-add_subdirectory(Hyperdendrimer_RouseMatrix)
+#add_subdirectory(Hyperdendrimer_RouseMatrix)
 
 # Rouse Matrix evaluation of BarabasiAlbert for m=1 and initial m0=2
-add_subdirectory(BarabasiAlbert_RouseMatrix)
+#add_subdirectory(BarabasiAlbert_RouseMatrix)
 
 # Rouse Matrix evaluation of BarabasiAlbert for m=1 and initial m0=2
 # under excluded volume and restricted functionality f<=3
-add_subdirectory(BarabasiAlbertRestrictedF3_RouseMatrix)
+#add_subdirectory(BarabasiAlbertRestrictedF3_RouseMatrix)
 
 # Creator of BarabasiAlbert for m=1 and initial m0=2
 # under excluded volume and restricted functionality f<=3
-add_subdirectory(BarabasiAlbertRestrictedF3_Creation)
+#add_subdirectory(BarabasiAlbertRestrictedF3_Creation)
 
 # Radius of gyration analyzer for single tree-like structure
 add_subdirectory(ChainWalking_Analyzer_RG2)
 
 # Rouse Matrix evaluation of SlowGrowth
-add_subdirectory(SlowGrowth_RouseMatrix)
+#add_subdirectory(SlowGrowth_RouseMatrix)
 
 # Perfect Dendrimer generation algorithm
-add_subdirectory(CreateDendrimerGeneral_FGS)
+#add_subdirectory(CreateDendrimerGeneral_FGS)
 
 
