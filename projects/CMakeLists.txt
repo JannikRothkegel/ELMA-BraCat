@@ -41,6 +41,10 @@ cmake_minimum_required (VERSION 2.8)
 # Radius of gyration analyzer for single tree-like structure
 add_subdirectory(ChainWalking_Analyzer_RG2)
 
+# A simple Solvent addder for bfm files
+add_subdirectory(SimpleSolventCreator)
+
+
 # Rouse Matrix evaluation of SlowGrowth
 #add_subdirectory(SlowGrowth_RouseMatrix)
 
