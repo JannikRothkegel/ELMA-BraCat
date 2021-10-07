@@ -94,7 +94,7 @@ int main(int argc, char* argv[])
 	
 
     // here new Molecules are added by using UpdaterAddLinearChains with a lengh of 1 
-	taskmanager.addUpdater(new UpdaterAddLinearChains<Ing>(myIngredients, newMolecules, 1));
+	taskmanager.addUpdater(new UpdaterAddLinearChains<Ing>(myIngredients, newMolecules, 1,1,2, true));
     
 
 
